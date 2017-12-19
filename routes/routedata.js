@@ -1,8 +1,10 @@
-var express = require('express');
-var o2x = require('object-to-xml');
-var jsontoxml = require('jsontoxml');
-var router = express.Router();
-var CarFlow = require('../models/Flow.js');
+const express = require('express');
+const o2x = require('object-to-xml');
+const jsontoxml = require('jsontoxml');
+const router = express.Router();
+const CarFlow = require('../models/Flow.js');
+const User = require('../models/user.js');
+
 
 router.use((req, res, next) => {
     console.log('Source IP: ' + req.ip + ' at ' + new Date().toString());
@@ -83,7 +85,7 @@ router.get('/cross/:id/start=:timestart&end=:timeend', (req, res) => {
  *  返回一个具体 cross id
  * **/
 router.get(
-    '/cross/:id/lane/lanestart=:lanest&laneend=:laneen/start=:timestart&end=:timeend',
+    '/cross/:id/lane/lanestart=:lanest&laneend=:laneen/start=:timestart&end=:timeend/:page',
     (req, res) => {
         const row_count = CarFlow.findByCrossByLaneRangeByPeriodTotalPages(
             req.params.id,
@@ -98,6 +100,7 @@ router.get(
                     req.params.laneen,
                     req.params.timestart,
                     req.params.timeend,
+                    req.params.page,
                     (err, obj) => {
                         obj.push({total_count: total_count});
                         res.status(200).json(obj);
@@ -157,4 +160,37 @@ router.get('/getlane/:id', (req, res) => {
     })
 });
 
+/**
+ *  user 相关 API
+ *  -----------------------------------------------------------
+ * **/
+
+
+/**
+ *  校对账号密码
+ *
+ * **/
+router.get('/login/account/:userName/:password', (req, res)=> {
+        User.checkAccount(req.params.userName,req.params.password, (ret)=>{
+            if(ret){
+                res.status(200).json({status:'ok', userName:req.params.userName})
+            }else{
+                res.status(200).json({status:'error'})
+            }
+        })
+});
+
+router.get('/currentUser', (req, res)=> {
+
+    const obj = {
+        name: 'SeratiMa',
+        avatar: 'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
+        userid: '00000001',
+        notifyCount: 0,
+    };
+    res.status(200).json(obj)
+});
+
+
 module.exports = router;
+
