@@ -12,7 +12,6 @@ router.get('/login/account/:userName/:password', (req, res)=> {
     User.findOne({username: userName})
         .then((ret) => {
             let  result = false;
-            console.log(ret);
             if(ret != null){
                 if(password === ret.password){
                     result = true;

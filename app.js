@@ -24,9 +24,7 @@ app.use(cookieParser());
 app.use('/api/method=get&appkey=436etaq52e57a3cd028ab56b&seckey=sec-mj12Slu12w1Xs1er8ZzmGZqw5qrpFmqw25jHULr13eUZCswA/v1', v1);
 
 app.use((req, res, next) => {
-    const err = new Error('Not Found');
-    err.status = 404;
-    next(err);
+    res.status(404).json({code:404})
 });
 
 module.exports = app;
