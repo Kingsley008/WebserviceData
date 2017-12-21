@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://saiwei:135246Acbd@106.14.142.169:37017/saiwei', {
-  server: { reconnectTries: Number.MAX_VALUE }
+    server: { auto_reconnect: true },
 });
 
 const db = mongoose.connection;

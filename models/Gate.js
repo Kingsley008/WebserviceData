@@ -8,9 +8,7 @@ var GateSchema = new Schema({
     type: String,
     location: {xPoint: Double,
                yPoint: Double },
-    //userAdmin: {type: String,default:'Admin'},//this function repetitive?
-    idGate: String,//Normal: 1 Super: 2
-	//avatar: {type: String, default: 'default.jpg'},
+	avatar: {type: String, default: 'default.jpg'},
     setTime: String,
     roadName: String
 });
