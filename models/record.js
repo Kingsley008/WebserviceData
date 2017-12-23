@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 var mongodb = require('./mongodb');
 var Schema =  mongodb.mongoose.Schema;
 var passportLocalMongoose = require('passport-local-mongoose');
