@@ -117,6 +117,7 @@ router.get('/start=:timestart&end=:timeend', (req, res) => {
 /**
  *  查询某个 cross id  某段时间的数据 - 使用
  * **/
+
 router.get('/cross/:id/start=:timestart&end=:timeend/:page', (req, res) => {
 
     let total_page = 0;
@@ -192,6 +193,8 @@ router.get(
     }
 );
 
+
+
 /**
  *  某个车道最近三分钟的数据
  * **/
@@ -222,6 +225,39 @@ router.get('/cross/:id/last3min', (req, res) => {
     );
 });
 
+/**
+ *  查询某个网关 某个车道  最近n分钟的数据
+ * **/
+router.get('/cross/:id/lane/:lane/last_minutes/:n', (req, res) => {
+    const n = req.params.n;
+    let now = moment().startOf('seconds');
+    let now_back_nmin = moment(now).subtract(n, 'minutes');
+    now = now.add(8, 'hours'); //china
+    now_back_nmin = now_back_nmin.add(8, 'hours');
+    let now_str = timeUtil.ISO2String(now);
+    let now_back_nmin_str = timeUtil.ISO2String(now_back_nmin);
+
+    console.log(now_str);
+    console.log(now_back_nmin_str);
+
+    CarFlow.find(
+        {
+            'CrossTrafficData.CrossID': req.params.id,
+            'CrossTrafficData.DataList.Data.LaneNo': req.params.lane,
+            'CrossTrafficData.DateTime': {$gt: now_back_nmin_str, $lte: now_str}
+        },
+        '-_id -__v',
+        (err, data_id_nmin) => {
+            if(err){
+                res.status(200).json(err)
+            }
+            res.status(200).json(data_id_nmin)
+        }
+    );
+});
+
+
+
 router.get('/last/:n', (req, res) => {
 
     CarFlow.find({}, (err, data_n) => {
@@ -240,6 +276,7 @@ router.get('/cross/:id/lane/:no/last/:n', (req, res) => {
     const id = req.params.id;
     const no = req.params.no;
     const n = req.params.n;
+
     CarFlow.find(
         {
             'CrossTrafficData.CrossID': id,
@@ -267,12 +304,36 @@ router.get('/allcrossid', (req, res) => {
 });
 
 
-// // TODO 通过id 查询 车道 暂时写不出
-// router.get('/getlane/:id', (req, res) => {
-//     console.log(req.params.id);
-//     CarFlow.findLaneByCrossId(req.params.id, (err, obj) => {
-//         res.status(200).json(obj);
-//     })
-// });
+// TODO  傻方法处理了查询车道号的逻辑 可以优化
+router.get('/getlane/:id', (req, res) => {
+    console.log(req.params.id);
+    const cross_id = req.params.id;
+    CarFlow.aggregate([
+        {$match:{'CrossTrafficData.CrossID':cross_id}},
+        {$project:{'CrossTrafficData.DataList.Data.LaneNo':1,'_id':0}},
+    ]).limit(200)
+        .then((data) => {
+            // 获得laneNo 数组
+            let laneNos = [];
+            data.forEach((v)=>{
+                    laneNos.push(v.CrossTrafficData.DataList.Data.LaneNo)
+            });
+            // 对数组进行去重
+            let noReapt = laneNos.reduce((prev,next)=>{
+                if(prev.indexOf(next) === -1){
+                    prev.push(next);
+                    return prev
+                }else{
+                    return prev
+                }
+            },[]);
+
+            res.status(200).json(noReapt)
+        })
+        .catch((err) => {
+            res.status(200).json(err)
+        })
+
+});
 
 module.exports = router;

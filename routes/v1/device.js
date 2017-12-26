@@ -73,4 +73,15 @@ router.get('/get_device', (req,res) => {
 });
 
 
+/**
+ * 根据cross_id 查询路口名称
+ * **/
+
+router.get('/get_device_name/:cross_id', (req,res) => {
+   Device.findOne({cross_id:req.params.cross_id})
+       .then((ret)=>{
+            return res.status(200).json(ret)
+       })
+});
+
 module.exports = router;
