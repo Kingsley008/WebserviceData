@@ -38,6 +38,7 @@ router.get('/all', (req, res) => {
     });
 });
 
+
 router.get('/near', (req, res) => {
     const today = moment().startOf('day');
     const week_ago = moment(today).subtract(7, 'days');
@@ -117,7 +118,6 @@ router.get('/start=:timestart&end=:timeend', (req, res) => {
 /**
  *  查询某个 cross id  某段时间的数据 - 使用
  * **/
-
 router.get('/cross/:id/start=:timestart&end=:timeend/:page', (req, res) => {
 
     let total_page = 0;
@@ -257,7 +257,6 @@ router.get('/cross/:id/lane/:lane/last_minutes/:n', (req, res) => {
 });
 
 
-
 router.get('/last/:n', (req, res) => {
 
     CarFlow.find({}, (err, data_n) => {
@@ -306,7 +305,7 @@ router.get('/allcrossid', (req, res) => {
 
 // TODO  傻方法处理了查询车道号的逻辑 可以优化
 router.get('/getlane/:id', (req, res) => {
-    console.log(req.params.id);
+
     const cross_id = req.params.id;
     CarFlow.aggregate([
         {$match:{'CrossTrafficData.CrossID':cross_id}},
@@ -327,13 +326,57 @@ router.get('/getlane/:id', (req, res) => {
                     return prev
                 }
             },[]);
-
             res.status(200).json(noReapt)
         })
         .catch((err) => {
             res.status(200).json(err)
         })
-
 });
+
+router.get('/cross/:cross_id/lane/:laneNo/history/:date', (req, res)=> {
+    const id = req.params.cross_id;
+    const no = req.params.laneNo;
+    const date = req.params.date;
+    const query = new RegExp(date);
+
+    CarFlow.find({
+        'CrossTrafficData.CrossID': id,
+        'CrossTrafficData.DataList.Data.LaneNo': no,
+        'CrossTrafficData.DateTime':query
+    },
+        '-_id -__v',
+    ).sort( {'CrossTrafficData.DateTime':1})
+        .then((data)=>{
+                res.status(200).json(data)
+        })
+});
+
+/**
+ * 通过cross_id   合计所有车道流量
+ * **/
+router.post('/cross/summary',(req,res) => {
+    console.log(req.body);
+    const cross_id_arr = req.body;
+    const n = 1;
+    let now = moment().startOf('seconds');
+    let now_back_nmin = moment(now).subtract(n, 'minutes');
+    now = now.add(8, 'hours'); //china
+    now_back_nmin = now_back_nmin.add(8, 'hours');
+    let now_str = timeUtil.ISO2String(now);
+    let now_back_nmin_str = timeUtil.ISO2String(now_back_nmin);
+    // TODO 地磁数据重复 临时使用 除以2解决
+    CarFlow.aggregate([
+        { $match:{'CrossTrafficData.CrossID':{$in:cross_id_arr}, 'CrossTrafficData.DateTime': {$gt: now_back_nmin_str, $lte: now_str}} },
+        { $group : { _id : "$CrossTrafficData.CrossID",totalFlow : {$sum : "$CrossTrafficData.DataList.Data.Volume"} }},
+    ])
+        .then((data)=>{
+            res.status(200).json(data);
+        })
+        .catch((err) => {
+            res.status(200).json(err);
+        })
+});
+
+
 
 module.exports = router;
