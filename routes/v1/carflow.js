@@ -3,7 +3,7 @@ const o2x = require('object-to-xml');
 const jsontoxml = require('jsontoxml');
 const moment = require('moment');
 const router = express.Router();
-const timeUtil  = require('../../utils/time');
+const timeUtil = require('../../utils/time');
 const CarFlow = require('../../models/Flow');
 
 
@@ -194,7 +194,6 @@ router.get(
 );
 
 
-
 /**
  *  某个车道最近三分钟的数据
  * **/
@@ -217,10 +216,10 @@ router.get('/cross/:id/last3min', (req, res) => {
         },
         '-_id -__v',
         (err, data_id_3min) => {
-           if(err){
-               res.status(200).json(err)
-           }
-           res.status(200).json(data_id_3min)
+            if (err) {
+                res.status(200).json(err)
+            }
+            res.status(200).json(data_id_3min)
         }
     );
 });
@@ -248,7 +247,7 @@ router.get('/cross/:id/lane/:lane/last_minutes/:n', (req, res) => {
         },
         '-_id -__v',
         (err, data_id_nmin) => {
-            if(err){
+            if (err) {
                 res.status(200).json(err)
             }
             res.status(200).json(data_id_nmin)
@@ -283,10 +282,10 @@ router.get('/cross/:id/lane/:no/last/:n', (req, res) => {
         },
         '-_id -__v',
         (err, data_id_no_n) => {
-           if(err){
-               res.status(200).json(err);
-           }
-           res.status(200).json(data_id_no_n);
+            if (err) {
+                res.status(200).json(err);
+            }
+            res.status(200).json(data_id_no_n);
         }
     )
         .sort({'CrossTrafficData.DateTime': -1})
@@ -308,24 +307,24 @@ router.get('/getlane/:id', (req, res) => {
 
     const cross_id = req.params.id;
     CarFlow.aggregate([
-        {$match:{'CrossTrafficData.CrossID':cross_id}},
-        {$project:{'CrossTrafficData.DataList.Data.LaneNo':1,'_id':0}},
+        {$match: {'CrossTrafficData.CrossID': cross_id}},
+        {$project: {'CrossTrafficData.DataList.Data.LaneNo': 1, '_id': 0}},
     ]).limit(200)
         .then((data) => {
             // 获得laneNo 数组
             let laneNos = [];
-            data.forEach((v)=>{
-                    laneNos.push(v.CrossTrafficData.DataList.Data.LaneNo)
+            data.forEach((v) => {
+                laneNos.push(v.CrossTrafficData.DataList.Data.LaneNo)
             });
             // 对数组进行去重
-            let noReapt = laneNos.reduce((prev,next)=>{
-                if(prev.indexOf(next) === -1){
+            let noReapt = laneNos.reduce((prev, next) => {
+                if (prev.indexOf(next) === -1) {
                     prev.push(next);
                     return prev
-                }else{
+                } else {
                     return prev
                 }
-            },[]);
+            }, []);
             res.status(200).json(noReapt)
         })
         .catch((err) => {
@@ -333,29 +332,28 @@ router.get('/getlane/:id', (req, res) => {
         })
 });
 
-router.get('/cross/:cross_id/lane/:laneNo/history/:date', (req, res)=> {
+router.get('/cross/:cross_id/lane/:laneNo/history/:date', (req, res) => {
     const id = req.params.cross_id;
     const no = req.params.laneNo;
     const date = req.params.date;
     const query = new RegExp(date);
 
     CarFlow.find({
-        'CrossTrafficData.CrossID': id,
-        'CrossTrafficData.DataList.Data.LaneNo': no,
-        'CrossTrafficData.DateTime':query
-    },
+            'CrossTrafficData.CrossID': id,
+            'CrossTrafficData.DataList.Data.LaneNo': no,
+            'CrossTrafficData.DateTime': query
+        },
         '-_id -__v',
-    ).sort( {'CrossTrafficData.DateTime':1})
-        .then((data)=>{
-                res.status(200).json(data)
+    ).sort({'CrossTrafficData.DateTime': 1})
+        .then((data) => {
+            res.status(200).json(data)
         })
 });
 
 /**
  * 通过cross_id   合计所有车道流量
  * **/
-router.post('/cross/summary',(req,res) => {
-    console.log(req.body);
+router.post('/cross/summary', (req, res) => {
     const cross_id_arr = req.body;
     const n = 1;
     let now = moment().startOf('seconds');
@@ -366,17 +364,21 @@ router.post('/cross/summary',(req,res) => {
     let now_back_nmin_str = timeUtil.ISO2String(now_back_nmin);
     // TODO 地磁数据重复 临时使用 除以2解决
     CarFlow.aggregate([
-        { $match:{'CrossTrafficData.CrossID':{$in:cross_id_arr}, 'CrossTrafficData.DateTime': {$gt: now_back_nmin_str, $lte: now_str}} },
-        { $group : { _id : "$CrossTrafficData.CrossID",totalFlow : {$sum : "$CrossTrafficData.DataList.Data.Volume"} }},
+        {
+            $match: {
+                'CrossTrafficData.CrossID': {$in: cross_id_arr},
+                'CrossTrafficData.DateTime': {$gt: now_back_nmin_str, $lte: now_str}
+            }
+        },
+        {$group: {_id: "$CrossTrafficData.CrossID", totalFlow: {$sum: "$CrossTrafficData.DataList.Data.Volume"}}},
     ])
-        .then((data)=>{
+        .then((data) => {
             res.status(200).json(data);
         })
         .catch((err) => {
             res.status(200).json(err);
         })
 });
-
 
 
 module.exports = router;
